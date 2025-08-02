@@ -3,11 +3,14 @@ import pandas as pd
 # parameters
 list_of_assets = ["01_btc", "02_eth", "03_sol", "04_xrp"]
 leverage_list = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-starting_year = 2020
+starting_year = 2023
 
 # output dataframe
-df_ans = pd.DataFrame(leverage_list, columns=["leverage"])
+df_pnl = pd.DataFrame(leverage_list, columns=["leverage"])
+df_price = pd.DataFrame()
+df_return = pd.DataFrame()
 
+print("---------- reading data ----------")
 # read data
 for asset in list_of_assets:
 
@@ -22,10 +25,13 @@ for asset in list_of_assets:
     # drop NaN indexed lines and ensure 'close' is float
     df = df[~df.index.isna()] 
     df["close"] = df["close"].astype(float)
+    df_price[asset] = df["close"]
+    df_return[asset] = df["close"] / df["close"].shift(1) -1
 
     # filter data for the specified year
     df = df[df.index.year >= starting_year]
 
+    print(f"calculating pnl for {asset}...")
     # backtest loop
     simulated_pnl = []
     for leverage in leverage_list:
@@ -46,7 +52,16 @@ for asset in list_of_assets:
                 pnl = 1 + total_return
         simulated_pnl.append(float(pnl))
         # print(f"{index:%Y-%m-%d}: leverage = {leverage:.2f} | PnL = {pnl:.2f}")
-    df_ans[asset] = simulated_pnl
+    df_pnl[asset] = simulated_pnl
 
-df_ans.set_index("leverage", inplace=True)
-print(df_ans)
+print("---------- simulation results ----------")
+print(f"starting at {starting_year}")
+print("----------   pnl simulation   ----------")
+df_pnl.set_index("leverage", inplace=True)
+print(df_pnl)
+print("----------  pnl correlation  ----------")
+print(df_pnl.corr())
+print("---------- price correlation ----------")
+print(df_price.corr())
+print("---------- return correlation ---------")
+print(df_return.corr())
