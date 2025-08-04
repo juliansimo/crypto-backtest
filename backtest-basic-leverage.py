@@ -3,7 +3,7 @@ import pandas as pd
 # parameters
 list_of_assets = ["01_btc", "02_eth", "03_sol", "04_xrp"]
 leverage_list = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-starting_year = 2023
+starting_year = 2014
 
 # output dataframe
 df_pnl = pd.DataFrame(leverage_list, columns=["leverage"])
@@ -31,27 +31,34 @@ for asset in list_of_assets:
     # filter data for the specified year
     df = df[df.index.year >= starting_year]
 
-    print(f"calculating pnl for {asset}...")
     # backtest loop
+
     simulated_pnl = []
+
+    print(f"calculating pnl for {asset}...")
+
     for leverage in leverage_list:
+
         initial_price = df["close"].iloc[0]
-        cripto_return = 0.0
-        future_return = 0.0
-        total_return = 0.0
-        pnl = 0.0
         liquidated = False
+
         for index, row in df.iterrows():
-            if not liquidated:
-                cripto_return = row["close"] / initial_price - 1
-                future_return = leverage * cripto_return
-                total_return = cripto_return + future_return
-                if total_return < -1:
-                    liquidated = True
-                    total_return = -1.0
-                pnl = 1 + total_return
+
+            if liquidated:
+                break
+
+            cripto_return = row["close"] / initial_price - 1
+            future_return = leverage * cripto_return
+            total_return = cripto_return + future_return
+
+            if total_return < -1:
+                liquidated = True
+                total_return = -1.0
+
+            pnl = 1 + total_return
+
         simulated_pnl.append(float(pnl))
-        # print(f"{index:%Y-%m-%d}: leverage = {leverage:.2f} | PnL = {pnl:.2f}")
+
     df_pnl[asset] = simulated_pnl
 
 print("---------- simulation results ----------")
@@ -61,7 +68,5 @@ df_pnl.set_index("leverage", inplace=True)
 print(df_pnl)
 print("----------  pnl correlation  ----------")
 print(df_pnl.corr())
-print("---------- price correlation ----------")
-print(df_price.corr())
 print("---------- return correlation ---------")
 print(df_return.corr())
