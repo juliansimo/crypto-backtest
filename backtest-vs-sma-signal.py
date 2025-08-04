@@ -15,6 +15,7 @@ import pandas as pd
 list_of_assets = ["01_btc", "02_eth", "03_sol", "04_xrp"]
 leverage_list = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
 starting_year = 2014
+allow_short_futures = False
 
 # output dataframe
 df_pnl = pd.DataFrame(leverage_list, columns=["leverage"])
@@ -67,7 +68,7 @@ for asset in list_of_assets:
                 break
 
             spot_return = row["close"] / initial_price - 1
-            if future_position == "long":
+            if future_position != "neutral":
                 future_return = leverage * spot_return
             else:
                 future_return = 0.0
@@ -81,13 +82,19 @@ for asset in list_of_assets:
 
             buy_signal = row["sma_5"] > row["sma_30"] and row["sma_30"] > row["sma_60"]
             sell_signal = row["sma_5"] < row["sma_30"] and row["sma_30"] < row["sma_60"]
+            if not allow_short_futures:
+                sell_signal = False
 
             match future_position:
                     case "neutral":
                         if buy_signal:
                             future_position = "long"
-                    case "long":
-                        if not buy_signal:
+                            leverage = abs(leverage)
+                        if sell_signal:
+                            future_position = "short"
+                            leverage = -abs(leverage)
+                    case _:
+                        if not buy_signal and not sell_signal:
                             future_position = "neutral"
 
         simulated_pnl.append(float(pnl_spot))
@@ -96,6 +103,7 @@ for asset in list_of_assets:
 
 print("---------- simulation results ----------")
 print(f"starting at {starting_year}")
+print(f"selling short futures allowed = {allow_short_futures}")
 print("----------   pnl simulation   ----------")
 df_pnl.set_index("leverage", inplace=True)
 print(df_pnl)
