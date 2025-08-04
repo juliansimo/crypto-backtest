@@ -58,10 +58,6 @@ for asset in list_of_assets:
     for leverage in leverage_list:
 
         initial_price = df["close"].iloc[0]
-        spot_return = 0.0
-        future_return = 0.0
-        total_return = 0.0
-        pnl_spot = 0.0
         liquidated = False
         future_position = "neutral"
 
@@ -85,6 +81,7 @@ for asset in list_of_assets:
 
             buy_signal = row["sma_5"] > row["sma_30"] and row["sma_30"] > row["sma_60"]
             sell_signal = row["sma_5"] < row["sma_30"] and row["sma_30"] < row["sma_60"]
+            
             match future_position:
                     case "neutral":
                         if buy_signal:
@@ -108,7 +105,5 @@ df_pnl.set_index("leverage", inplace=True)
 print(df_pnl)
 print("----------  pnl correlation  ----------")
 print(df_pnl.corr())
-print("---------- price correlation ----------")
-print(df_price.corr())
 print("---------- return correlation ---------")
 print(df_return.corr())

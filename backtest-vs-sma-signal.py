@@ -50,41 +50,48 @@ for asset in list_of_assets:
     # filter data for the specified year
     df = df[df.index.year >= starting_year]
 
-    print(f"calculating pnl for {asset}...")
     # backtest loop
+    print(f"calculating pnl for {asset}...")
+
     simulated_pnl = []
+
     for leverage in leverage_list:
+
         initial_price = df["close"].iloc[0]
-        spot_return = 0.0
-        future_return = 0.0
-        total_return = 0.0
-        pnl_spot = 0.0
         liquidated = False
-        buy_signal = False
-        sell_signal = False
         future_position = "neutral"
+
         for index, row in df.iterrows():
-            if not liquidated:
-                spot_return = row["close"] / initial_price - 1
-                if future_position == "long":
-                    future_return = leverage * spot_return
-                else:
-                    future_return = 0.0
-                total_return = spot_return + future_return
-                if total_return < -1:
-                    liquidated = True
-                    total_return = -1.0
-                pnl_spot = 1 + total_return
-                buy_signal = row["sma_5"] > row["sma_30"] and row["sma_30"] > row["sma_60"]
-                sell_signal = row["sma_5"] < row["sma_30"] and row["sma_30"] < row["sma_60"]
-                match future_position:
-                        case "neutral":
-                            if buy_signal:
-                                future_position = "long"
-                        case "long":
-                            if not buy_signal:
-                                future_position = "neutral"
+
+            if liquidated:
+                break
+
+            spot_return = row["close"] / initial_price - 1
+            if future_position == "long":
+                future_return = leverage * spot_return
+            else:
+                future_return = 0.0
+            total_return = spot_return + future_return
+
+            if total_return < -1:
+                liquidated = True
+                total_return = -1.0
+
+            pnl_spot = 1 + total_return
+
+            buy_signal = row["sma_5"] > row["sma_30"] and row["sma_30"] > row["sma_60"]
+            sell_signal = row["sma_5"] < row["sma_30"] and row["sma_30"] < row["sma_60"]
+
+            match future_position:
+                    case "neutral":
+                        if buy_signal:
+                            future_position = "long"
+                    case "long":
+                        if not buy_signal:
+                            future_position = "neutral"
+
         simulated_pnl.append(float(pnl_spot))
+
     df_pnl[asset] = simulated_pnl
 
 print("---------- simulation results ----------")
@@ -94,7 +101,5 @@ df_pnl.set_index("leverage", inplace=True)
 print(df_pnl)
 print("----------  pnl correlation  ----------")
 print(df_pnl.corr())
-print("---------- price correlation ----------")
-print(df_price.corr())
 print("---------- return correlation ---------")
 print(df_return.corr())
