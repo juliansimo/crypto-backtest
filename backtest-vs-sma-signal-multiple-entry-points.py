@@ -100,9 +100,19 @@ for asset in list_of_assets:
 
     simulated_pnl = []
 
+    out_dict = {}
     for leverage in leverage_list:
         print(f"asset = {asset} | leverage = {leverage}")
+        pnl_list = []
         for i in range(0, len(df) - 365):
-            df_tmp = df[i:-365]
-            pnl_spot = calc_pnl(leverage=leverage, df=df_tmp)
-            print(pnl_spot)
+            df_tmp = df[i:i+365]
+            pnl_spot = calc_pnl(leverage = leverage, df = df_tmp)
+            # print(pnl_spot)
+            pnl_list.append(pnl_spot)
+        out_dict[asset+"_"+str(leverage)] = pnl_list
+        print (f"simulation results...")
+        print (f"{stats.mean(pnl_list):.2f}")
+        print (f"{stats.stdev(pnl_list):.2f}")
+
+    df_out = pd.DataFrame(out_dict)
+    df_out.to_csv("simulation_result.csv", index=False)
